@@ -53,5 +53,32 @@ PROMPT_TEMPLATES = {
     Characters: {characters}
     Task: Write a pivotal script scene based on the story outline. 
     FOLLOW STRICT SCREENPLAY FORMATTING (INT./EXT., CAPS for names, Action, Dialogue).
+    """,
+    
+    "critic": """
+    Scene Content: {scene}
+    Task: You are a strict Hollywood Script Editor. Evaluate the scene above.
+    Check for:
+    1. Proper formatting (INT./EXT.)
+    2. Evocative action and natural dialogue.
+    3. Pacing and conflict.
+    If the scene is excellent and ready for production, reply EXACTLY with: APPROVED
+    If the scene needs work, reply with: REJECTED - [Provide specific feedback on what to fix]
+    """,
+    
+    "rewrite": """
+    Original Scene: {scene}
+    Critic Feedback: {feedback}
+    Task: Rewrite the scene addressing ALL the critic's feedback. Maintain strict professional screenplay formatting.
+    """,
+    
+    "planner": """
+    Scene/Outline Content: {content}
+    Task: You are a Production Planner. Analyze the content and generate a structured "Production Plan".
+    Include:
+    1. Locations Needed
+    2. Props Required
+    3. Characters Present
+    4. Estimated Budget Tier (Low, Medium, High) with a 1-sentence justification.
     """
 }

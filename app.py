@@ -17,38 +17,105 @@ st.set_page_config(
 # Custom CSS for Premium Look
 st.markdown("""
 <style>
-    .main {
-        background-color: #0e1117;
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Courier+Prime&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Outfit', sans-serif;
     }
+    /* Unique Blueprint Background */
+    .stApp {
+        background-color: #0B0C10;
+        background-image: 
+            linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+    
+    /* Sleek Sidebar */
+    div[data-testid="stSidebar"] {
+        background-color: #111218 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+    }
+    
+    /* Elegant Glowing Button */
     .stButton>button {
         width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #ff4b4b;
+        background: linear-gradient(135deg, #e63946, #ff7b7b);
         color: white;
-        font-weight: bold;
+        border: 1px solid rgba(255, 123, 123, 0.3);
+        box-shadow: 0 4px 15px rgba(230, 57, 70, 0.2);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 8px;
+        height: 3.5em;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
     }
-    .stTextInput>div>div>input {
-        background-color: #1a1c24;
-        color: white;
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(230, 57, 70, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.5);
     }
+    
+    /* Cinematic Inputs */
+    .stTextArea>div>div>textarea, .stTextInput>div>div>input {
+        background-color: rgba(0, 0, 0, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #f1faee !important;
+        border-radius: 8px !important;
+        font-size: 1.05rem !important;
+        padding: 10px !important;
+    }
+    .stTextArea>div>div>textarea:focus, .stTextInput>div>div>input:focus {
+        border-color: #e63946 !important;
+        box-shadow: 0 0 15px rgba(230, 57, 70, 0.3) !important;
+    }
+    
+    /* Floating Output Cards */
     .output-section {
-        background-color: #1a1c24;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #ff4b4b;
-        margin-bottom: 20px;
-    }
-    .script-text {
-        font-family: 'Courier New', Courier, monospace;
-        background-color: #f4f4f4;
-        color: #333;
+        background: rgba(26, 28, 36, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         padding: 30px;
-        border-radius: 5px;
-        white-space: pre-wrap;
+        border-radius: 12px;
+        border-left: 6px solid #e63946;
+        margin-bottom: 30px;
+        color: #e0e0e0;
+        line-height: 1.7;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        font-size: 1.1rem;
     }
+    
+    /* Realistic Screenplay Format */
+    .script-text {
+        font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+        background-color: #fdfdfd;
+        color: #111;
+        padding: 60px 80px;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        box-shadow: 10px 10px 25px rgba(0,0,0,0.6);
+        max-width: 850px;
+        margin: 0 auto 30px auto;
+        line-height: 1.4;
+        font-size: 1.05rem;
+    }
+    
+    /* Gradient Headers */
     h1, h2, h3 {
-        color: #ff4b4b !important;
+        background: -webkit-linear-gradient(45deg, #e63946, #ffb3b3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800 !important;
+    }
+    
+    .stExpander {
+        border: none !important;
+        background-color: transparent !important;
+    }
+    div[data-testid="stExpanderDetails"] {
+        border-left: 2px solid rgba(255,255,255,0.1);
+        padding-left: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -136,8 +203,9 @@ if generate_btn:
                             concept = st.session_state.pipeline.run_stage('concept', {'idea': idea_input, 'genre': genre, 'tone': tone})
                             outline = st.session_state.pipeline.run_stage('outline', {'pitch': concept})
                             chars = st.session_state.pipeline.run_stage('characters', {'outline': outline})
-                            scene = st.session_state.pipeline.run_stage('scene', {'outline': outline, 'characters': chars})
-                            st.session_state.outputs = {'scene': scene}
+                            scene = st.session_state.pipeline.run_agentic_scene(outline, chars)
+                            planner = st.session_state.pipeline.run_planner(scene)
+                            st.session_state.outputs = {'scene': scene, 'planner': planner}
                         else:
                             concept = st.session_state.pipeline.run_stage('concept', {'idea': idea_input, 'genre': genre, 'tone': tone})
                             logline = st.session_state.pipeline.run_stage('logline', {'concept': concept})
@@ -156,18 +224,21 @@ if st.session_state.outputs:
     st.markdown("---")
     
     for stage, content in st.session_state.outputs.items():
-        with st.expander(f"{stage.upper()}", expanded=(stage in ['pitch', 'scene'])):
+        with st.expander(f"{stage.upper()}", expanded=(stage in ['pitch', 'scene', 'planner'])):
             if stage == 'scene':
                 st.markdown(f'<div class="script-text">{content}</div>', unsafe_allow_html=True)
+            elif stage == 'planner':
+                st.markdown(f'<div class="output-section" style="border-left: 5px solid #4CAF50; background-color: #1e241e;">{content}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="output-section">{content}</div>', unsafe_allow_html=True)
             
             # Refine Button
-            if st.button(f"Regenerate {stage.capitalize()}", key=f"regen_{stage}"):
-                with st.spinner(f"Rewriting {stage}..."):
-                    new_output = st.session_state.pipeline.run_stage(stage, {'idea': idea_input, 'genre': genre, 'tone': tone, 'concept': st.session_state.outputs.get('concept', ''), 'logline': st.session_state.outputs.get('logline', ''), 'pitch': st.session_state.outputs.get('pitch', ''), 'outline': st.session_state.outputs.get('outline', ''), 'characters': st.session_state.outputs.get('characters', '')})
-                    st.session_state.outputs[stage] = new_output
-                    st.rerun()
+            if stage not in ['planner', 'critic']:
+                if st.button(f"Regenerate {stage.capitalize()}", key=f"regen_{stage}"):
+                    with st.spinner(f"Rewriting {stage}..."):
+                        new_output = st.session_state.pipeline.run_stage(stage, {'idea': idea_input, 'genre': genre, 'tone': tone, 'concept': st.session_state.outputs.get('concept', ''), 'logline': st.session_state.outputs.get('logline', ''), 'pitch': st.session_state.outputs.get('pitch', ''), 'outline': st.session_state.outputs.get('outline', ''), 'characters': st.session_state.outputs.get('characters', '')})
+                        st.session_state.outputs[stage] = new_output
+                        st.rerun()
 
     # Memory Viewer & Reset
     with st.sidebar:
