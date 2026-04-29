@@ -44,9 +44,9 @@ jobs:
                 cd integrated_entertainment_planner
             fi
             
-            # 3. Clean up the old container
-            sudo docker stop nomad-ai || true
-            sudo docker rm nomad-ai || true
+            # 3. Clean up the old project (Kill ALL running containers to free memory and ports)
+            sudo docker stop $(sudo docker ps -aq) || true
+            sudo docker rm $(sudo docker ps -aq) || true
             
             # 4. Build the new Docker image
             sudo docker build -t nomad-cosmic-app .
