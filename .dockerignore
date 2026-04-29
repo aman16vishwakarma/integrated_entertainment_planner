@@ -1,0 +1,9 @@
+.env
+__pycache__/
+.git/
+.vscode/
+*.pyc
+*.pyo
+venv/
+env/
+.streamlit/
