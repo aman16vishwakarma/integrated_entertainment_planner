@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Python dependencies
+# Explicitly install CPU-only PyTorch first to save 4GB+ of disk space on the EC2 instance
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
