@@ -1,0 +1,58 @@
+name: Deploy to Amazon EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH into EC2 and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GEMINI_API_KEY
+          script: |
+            # 1. Install Docker and Git if they are missing (handles both Amazon Linux 'yum' and Ubuntu 'apt')
+            if command -v yum &> /dev/null; then
+                sudo yum update -y
+                sudo yum install docker git -y
+                sudo service docker start || true
+            elif command -v apt-get &> /dev/null; then
+                sudo apt-get update -y
+                sudo apt-get install docker.io git -y
+                sudo systemctl start docker || true
+            fi
+            
+            # Ensure the user has permissions to run docker without sudo next time
+            sudo usermod -aG docker $USER
+            
+            # 2. Navigate to project or clone it
+            if [ -d "integrated_entertainment_planner" ]; then
+                cd integrated_entertainment_planner
+                git fetch origin main
+                git reset --hard origin/main
+            else
+                git clone https://github.com/aman16vishwakarma/integrated_entertainment_planner.git
+                cd integrated_entertainment_planner
+            fi
+            
+            # 3. Clean up the old container
+            sudo docker stop nomad-ai || true
+            sudo docker rm nomad-ai || true
+            
+            # 4. Build the new Docker image
+            sudo docker build -t nomad-cosmic-app .
+            
+            # 5. Run the new container, passing the API key securely
+            sudo docker run -d -p 8501:8501 -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" --name nomad-ai nomad-cosmic-app
+            
+            # 6. Optional: Clean up unused Docker images to save disk space on Free Tier
+            sudo docker image prune -f
